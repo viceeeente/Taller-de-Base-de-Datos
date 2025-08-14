@@ -1,0 +1,101 @@
+DECLARE
+    v_sueldo_total      NUMBER(8);
+    v_bono_extra        NUMBER(8);
+    v_bono_anio_trabajo NUMBER(8);
+    v_bono_salud        NUMBER(8);
+    v_bono_afp          NUMBER(8);
+    
+    TYPE t_bono IS
+        VARRAY(2) OF NUMBER;
+    v_bono              t_bono := t_bono(50000, 100000);
+    
+    CURSOR c_empleado IS
+    SELECT
+    
+        e.id_emp,
+        e.numrun_emp
+        || '-'
+        || e.dvrun_emp                                        AS run_emp,
+        e.pnombre_emp
+        || ' '
+        || e.snombre_emp
+        || ' '
+        || e.appaterno_emp
+        || ' '
+        || e.apmaterno_emp                                    AS nombre_emp,
+        e.direccion_emp,
+        c.nombre_comuna                                       AS comuna_emp,
+        e.sueldo_base,
+        trunc(months_between(sysdate, e.fecha_contrato) / 12) AS anios_trabajo_emp,
+        ts.porc_descto_salud                                  AS salud_emp,
+        afp.porc_descto_afp                                   AS afp_emp
+        
+    FROM
+             empleado e
+             
+        INNER JOIN comuna     c ON c.id_comuna = e.id_comuna
+        INNER JOIN tipo_salud ts ON ts.cod_tipo_sal = e.cod_tipo_sal
+        INNER JOIN afp ON e.cod_afp = afp.cod_afp
+        
+    ORDER BY
+        1;
+
+BEGIN
+
+    EXECUTE IMMEDIATE ( 'truncate table liquidacion_sueldo' );
+    
+    FOR i IN c_empleado LOOP
+    
+        v_bono_anio_trabajo := i.sueldo_base * ( i.anios_trabajo_emp / 100 );
+        v_bono_salud := i.sueldo_base * ( i.salud_emp / 100 );
+        v_bono_afp := i.sueldo_base * ( i.afp_emp / 100 );
+        v_sueldo_total := i.sueldo_base + v_bono_anio_trabajo - v_bono_salud - v_bono_afp;
+        
+        IF v_sueldo_total > 1000000 THEN
+            v_bono_extra := v_bono(1);
+        ELSE
+            v_bono_extra := v_bono(2);
+        END IF;
+
+        v_sueldo_total := v_sueldo_total + v_bono_extra;
+        
+        dbms_output.put_line('');
+        dbms_output.put_line('ID Empleado: ' || i.id_emp);
+        dbms_output.put_line('Run: ' || i.run_emp);
+        dbms_output.put_line('Nombre: ' || i.nombre_emp);
+        dbms_output.put_line('Dirección: ' || i.direccion_emp);
+        dbms_output.put_line('Comuna: ' || i.comuna_emp);
+        dbms_output.put_line('Sueldo Base: ' || i.sueldo_base);
+        dbms_output.put_line('Años de trabajo: ' || i.anios_trabajo_emp);
+        dbms_output.put_line('Bono Años de Trabajo: ' || v_bono_anio_trabajo);
+        dbms_output.put_line('Bono Salud: ' || v_bono_salud);
+        dbms_output.put_line('Bono AFP: ' || v_bono_afp);
+        dbms_output.put_line('Sueldo Total: ' || v_sueldo_total);
+        
+        INSERT INTO liquidacion_sueldo (
+            id_empleado,
+            run,
+            nombre_completo,
+            direccion,
+            comuna,
+            sueldo_base,
+            anios_trabajo,
+            bono_anios_trabajo,
+            salud,
+            afp,
+            sueldo_total
+        ) VALUES ( i.id_emp,
+                   i.run_emp,
+                   i.nombre_emp,
+                   i.direccion_emp,
+                   i.comuna_emp,
+                   i.sueldo_base,
+                   i.anios_trabajo_emp,
+                   v_bono_anio_trabajo,
+                   v_bono_salud,
+                   v_bono_afp,
+                   v_sueldo_total );
+
+    END LOOP;
+
+END;
