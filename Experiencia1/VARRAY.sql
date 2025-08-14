@@ -34,10 +34,10 @@ BEGIN
     v_afp:=i.sueldo_base*(i.afp / 100);
     v_salud:=i.sueldo_base*(i.salud / 100);
     
-    IF i.sueldo_base < 1000000 THEN
-        v_sueldo_total:= v_sueldo_total+varray_a(1);
+    IF i.sueldo_base > 1000000 THEN
+        i.sueldo_base:= i.sueldo_base+varray_a(1);
     ELSE
-        v_sueldo_total:= v_sueldo_total+varray_a(2);
+        i.sueldo_base:= i.sueldo_base+varray_a(2);
     END IF;
     
     v_sueldo_total:=i.sueldo_base+v_bono_anios-v_salud-v_afp;
