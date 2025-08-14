@@ -1,5 +1,8 @@
 DECLARE
-    v_bono NUMBER(10);
+    v_bono_anios NUMBER(10);
+    v_afp NUMBER(10);
+    v_salud NUMBER(10);
+    v_sueldo_total NUMBER(10);
     TYPE varray_bono IS VARRAY(2) OF NUMBER;
     varray_a varray_bono;
     
@@ -12,10 +15,8 @@ DECLARE
         c.nombre_comuna as comuna,
         sueldo_base,
         trunc(MONTHS_BETWEEN(SYSDATE,fecha_contrato)/12) as anios_trabajo,
-        trunc(sueldo_base*(trunc(MONTHS_BETWEEN(SYSDATE,fecha_contrato)/12)/100)) as bono_annios_trabajo,
-        trunc(sueldo_base*(tp.porc_descto_salud/100)) as salud,
-        trunc(sueldo_base*(a.porc_descto_afp/100)) as afp,
-        sueldo_base+trunc(sueldo_base*(trunc(MONTHS_BETWEEN(SYSDATE,fecha_contrato)/12)/100))-trunc(sueldo_base*(tp.porc_descto_salud/100))-trunc(sueldo_base*(a.porc_descto_afp/100)) as sueldo_total
+        tp.porc_descto_salud as salud,
+        a.porc_descto_afp as afp
     
     FROM 
         empleado e
@@ -29,14 +30,17 @@ BEGIN
     EXECUTE IMMEDIATE('truncate table liquidacion_sueldo');
     
     FOR i in c_empleado LOOP
+    v_bono_anios:= i.sueldo_base*(i.anios_trabajo / 100);
+    v_afp:=i.sueldo_base*(i.afp / 100);
+    v_salud:=i.sueldo_base*(i.salud / 100);
     
     IF i.sueldo_base < 1000000 THEN
-        i.sueldo_total:= i.sueldo_total+varray_a(1);
+        v_sueldo_total:= v_sueldo_total+varray_a(1);
     ELSE
-        i.sueldo_total:= i.sueldo_total+varray_a(2);
+        v_sueldo_total:= v_sueldo_total+varray_a(2);
     END IF;
     
-    i.sueldo_total:=i.sueldo_base+i.bono_annios_trabajo-i.afp-i.salud;
+    v_sueldo_total:=i.sueldo_base+v_bono_anios-v_salud-v_afp;
     
         dbms_output.put_line('');
         dbms_output.put_line('Run : '||i.run);
@@ -45,10 +49,10 @@ BEGIN
         dbms_output.put_line('Comuna : '||i.comuna);
         dbms_output.put_line('Sueldo Base : '||i.sueldo_base);
         dbms_output.put_line('Años de trabajo : '||i.anios_trabajo);
-        dbms_output.put_line('Bono años de trabajo : '||i.bono_annios_trabajo);
-        dbms_output.put_line('Salud : '||i.salud);
-        dbms_output.put_line('AFP : '||i.afp);
-        dbms_output.put_line('Sueldo Total : '||i.sueldo_total);
+        dbms_output.put_line('Bono años de trabajo : '||v_bono_anios);
+        dbms_output.put_line('Salud : '||v_salud);
+        dbms_output.put_line('AFP : '||v_afp);
+        dbms_output.put_line('Sueldo Total : '||v_sueldo_total);
         
     
     END LOOP;
