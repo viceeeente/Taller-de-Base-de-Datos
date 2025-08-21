@@ -13,7 +13,8 @@ DECLARE
     ) IS
     SELECT
         nro_patente,
-        color
+        anio,
+        valor_arriendo_dia as arriendo
     FROM
         camion
     WHERE
@@ -28,23 +29,27 @@ where c.id_marca = p_marca;
 BEGIN
     FOR r_marca IN c_marca LOOP
         
-        dbms_output.put_line('Marca: ' || r_marca.nombre_marca);
-        dbms_output.put_line('');
+        dbms_output.put_line('-------------------------------');
+        for r_c_m in c_m(r_marca.id_marca) loop
+            dbms_output.put_line(r_marca.nombre_marca||': '||r_c_m.count);
+        end loop;
         FOR r_camion IN c_camion(r_marca.id_marca) LOOP
             v_contador := v_contador + 1;
-            dbms_output.put_line('Patente: ' || r_camion.nro_patente);
-            v_marca:= r_marca.nombre_marca;
+            dbms_output.put_line(v_contador||'. Patente: ' || r_camion.nro_patente);
+            dbms_output.put_line('Año: ' || r_camion.anio);
+            dbms_output.put_line('Arriendo por Día: ' || r_camion.arriendo);
+            dbms_output.put_line('');
         END LOOP;
-        for r_c_m in c_m(r_marca.id_marca) loop
-            dbms_output.put_line('Cantidad: '||r_c_m.count);
-            
-            
-        end loop;
-        dbms_output.put_line('-------------------------------');
-        
     END LOOP;
-    
-    dbms_output.put_line('TOTALES');
+    dbms_output.put_line('-------------------------------');
+    dbms_output.put_line('');
+    dbms_output.put_line('---TOTALES---');
+    for r_marca in c_marca loop
+        for r_c_m in c_m(r_marca.id_marca) loop
+                dbms_output.put_line(''||r_marca.nombre_marca||': '||r_c_m.count);
+            end loop;
+    end loop;
     dbms_output.put_line('Total Camiones: '||v_contador);
     dbms_output.put_line(''||v_marca);
 END;
+
